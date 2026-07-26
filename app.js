@@ -33,14 +33,17 @@ createApp({
     const uploadOpen = ref(false);
     const toastMsg = ref('');
     const swiperEl = ref(null);
+    // 多图浏览：当前作品内的图片索引
+    const currentPhotoImgIdx = ref(0);
+    const multiImgEls = ref({}); // { photoIdx: el }
 
     // 上传表单
     const uploadForm = reactive({
-      image: '',
+      images: [],
       title: '',
       desc: '',
       location: '',
-      category: 'landscape'
+      category: 'portrait'
     });
 
     // ============ 计算属性 ============
@@ -64,7 +67,7 @@ createApp({
     );
 
     const canPublish = computed(() =>
-      uploadForm.image && uploadForm.title.trim()
+      uploadForm.images.length > 0 && uploadForm.title.trim()
     );
 
     // ============ 图片 URL 生成 ============
@@ -113,6 +116,28 @@ createApp({
       return 1;
     }
 
+    // 当前浏览作品的所有大图
+    const currentPhotoImgs = computed(() => {
+      const photo = viewerPhotos.value[viewerIndex.value];
+      return photo ? getFullUrls(photo) : [];
+    });
+
+    // 多图滑动容器引用收集
+    function setMultiImgScroll(el, idx) {
+      if (el) multiImgEls.value[idx] = el;
+    }
+
+    // 多图内部滑动监听
+    function onMultiImgScroll(e, idx) {
+      if (idx !== viewerIndex.value) return;
+      const el = e.target;
+      const slideWidth = el.offsetWidth;
+      const imgIdx = Math.round(el.scrollLeft / slideWidth);
+      if (imgIdx !== currentPhotoImgIdx.value && imgIdx >= 0) {
+        currentPhotoImgIdx.value = imgIdx;
+      }
+    }
+
     function getCategoryName(catId) {
       const cat = categories.value.find(c => c.id === catId);
       return cat ? cat.name : '未分类';
@@ -124,6 +149,7 @@ createApp({
       if (idx === -1) return;
       viewerStartId.value = photoId;
       viewerIndex.value = idx;
+      currentPhotoImgIdx.value = 0;
       viewerOpen.value = true;
 
       nextTick(() => {
@@ -136,6 +162,7 @@ createApp({
 
     function closeViewer() {
       viewerOpen.value = false;
+      currentPhotoImgIdx.value = 0;
     }
 
     function onViewerScroll() {
@@ -144,6 +171,7 @@ createApp({
       const idx = Math.round(swiperEl.value.scrollLeft / slideWidth);
       if (idx !== viewerIndex.value && idx >= 0 && idx < viewerPhotos.value.length) {
         viewerIndex.value = idx;
+        currentPhotoImgIdx.value = 0;
       }
     }
 
@@ -213,11 +241,11 @@ createApp({
 
     // ============ 上传 ============
     function goUpload() {
-      uploadForm.image = '';
+      uploadForm.images = [];
       uploadForm.title = '';
       uploadForm.desc = '';
       uploadForm.location = '';
-      uploadForm.category = 'landscape';
+      uploadForm.category = 'portrait';
       uploadOpen.value = true;
     }
 
@@ -226,17 +254,34 @@ createApp({
     }
 
     function onImageSelect(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (file.size > 10 * 1024 * 1024) {
-        showToast('图片不能超过 10MB');
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      const remain = 9 - uploadForm.images.length;
+      if (remain <= 0) {
+        showToast('最多只能上传 9 张图片');
+        e.target.value = '';
         return;
       }
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        uploadForm.image = ev.target.result;
-      };
-      reader.readAsDataURL(file);
+      const toRead = files.slice(0, remain);
+      if (files.length > remain) {
+        showToast(`最多 9 张，已选前 ${remain} 张`);
+      }
+      toRead.forEach(file => {
+        if (file.size > 10 * 1024 * 1024) {
+          showToast('单张图片不能超过 10MB');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          uploadForm.images.push(ev.target.result);
+        };
+        reader.readAsDataURL(file);
+      });
+      e.target.value = '';
+    }
+
+    function removeUploadImage(idx) {
+      uploadForm.images.splice(idx, 1);
     }
 
     function publish() {
@@ -249,7 +294,7 @@ createApp({
         location: uploadForm.location.trim() || '未知地点',
         desc: uploadForm.desc.trim(),
         likes: 0,
-        image: uploadForm.image,
+        images: [...uploadForm.images],
         createdAt: Date.now()
       };
       userPhotos.value.unshift(newPhoto);
@@ -287,8 +332,15 @@ createApp({
       canPublish,
       toastMsg,
       swiperEl,
+      currentPhotoImgIdx,
+      currentPhotoImgs,
       getThumbUrl,
       getFullUrl,
+      getThumbUrls,
+      getFullUrls,
+      getPhotoCount,
+      setMultiImgScroll,
+      onMultiImgScroll,
       getCategoryName,
       openViewer,
       closeViewer,
@@ -301,6 +353,7 @@ createApp({
       goUpload,
       closeUpload,
       onImageSelect,
+      removeUploadImage,
       publish,
       openSearch
     };
