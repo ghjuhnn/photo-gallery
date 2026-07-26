@@ -1,5 +1,5 @@
 /**
- * 光影集 - 摄影作品集 H5 应用
+ * 有志青年摄影 - 摄影作品集 H5 应用
  * Vue 3 Composition API
  */
 const { createApp, ref, computed, reactive, nextTick, on } = Vue;
@@ -12,8 +12,13 @@ createApp({
 
     // 从本地存储加载用户上传的作品
     const userPhotos = ref(JSON.parse(localStorage.getItem('photo_user_uploads') || '[]'));
-    // 合并内置 + 用户上传
-    const allPhotos = computed(() => [...userPhotos.value, ...photos.value]);
+    // 从本地存储加载已删除的内置作品 id
+    const deletedPhotoIds = ref(new Set(JSON.parse(localStorage.getItem('photo_deleted_builtin') || '[]')));
+    // 合并内置（排除已删除） + 用户上传
+    const allPhotos = computed(() => [
+      ...userPhotos.value,
+      ...photos.value.filter(p => !deletedPhotoIds.value.has(p.id))
+    ]);
 
     // 收藏列表
     const likedIds = ref(new Set(JSON.parse(localStorage.getItem('photo_liked') || '[]')));
@@ -63,18 +68,49 @@ createApp({
     );
 
     // ============ 图片 URL 生成 ============
-    function getThumbUrl(photo) {
-      if (photo.seed) {
-        return `https://picsum.photos/seed/${photo.seed}/400/600`;
+    // 获取作品的所有图片缩略图（支持多图）
+    function getThumbUrls(photo) {
+      if (photo.images && photo.images.length) {
+        return photo.images;
       }
-      return photo.imageUrl || photo.image;
+      if (photo.seeds && photo.seeds.length) {
+        return photo.seeds.map(s => `https://picsum.photos/seed/${s}/400/600`);
+      }
+      return [getThumbUrl(photo)];
     }
 
-    function getFullUrl(photo) {
-      if (photo.seed) {
-        return `https://picsum.photos/seed/${photo.seed}/1080/1620`;
+    // 获取作品的所有大图（支持多图）
+    function getFullUrls(photo) {
+      if (photo.images && photo.images.length) {
+        return photo.images;
       }
-      return photo.imageUrl || photo.image;
+      if (photo.seeds && photo.seeds.length) {
+        return photo.seeds.map(s => `https://picsum.photos/seed/${s}/1080/1620`);
+      }
+      return [getFullUrl(photo)];
+    }
+
+    // 获取首张缩略图（用于卡片展示）
+    function getThumbUrl(photo) {
+      if (photo.images && photo.images.length) return photo.images[0];
+      if (photo.seeds && photo.seeds.length) return `https://picsum.photos/seed/${photo.seeds[0]}/400/600`;
+      if (photo.seed) return `https://picsum.photos/seed/${photo.seed}/400/600`;
+      return photo.imageUrl || photo.image || '';
+    }
+
+    // 获取首张大图
+    function getFullUrl(photo) {
+      if (photo.images && photo.images.length) return photo.images[0];
+      if (photo.seeds && photo.seeds.length) return `https://picsum.photos/seed/${photo.seeds[0]}/1080/1620`;
+      if (photo.seed) return `https://picsum.photos/seed/${photo.seed}/1080/1620`;
+      return photo.imageUrl || photo.image || '';
+    }
+
+    // 获取作品图片数量
+    function getPhotoCount(photo) {
+      if (photo.images && photo.images.length) return photo.images.length;
+      if (photo.seeds && photo.seeds.length) return photo.seeds.length;
+      return 1;
     }
 
     function getCategoryName(catId) {
@@ -134,6 +170,45 @@ createApp({
       }
       collectedIds.value = newSet;
       localStorage.setItem('photo_collected', JSON.stringify([...newSet]));
+    }
+
+    // ============ 删除作品 ============
+    function deletePhoto(id) {
+      // 找到要删除的作品
+      const photo = allPhotos.value.find(p => p.id === id);
+      if (!photo) return;
+
+      // 二次确认
+      if (!confirm(`确定要删除「${photo.title}」吗？`)) return;
+
+      // 判断是用户上传的还是内置的
+      const isUserUpload = userPhotos.value.some(p => p.id === id);
+
+      if (isUserUpload) {
+        // 删除用户上传的作品
+        userPhotos.value = userPhotos.value.filter(p => p.id !== id);
+        localStorage.setItem('photo_user_uploads', JSON.stringify(userPhotos.value));
+      } else {
+        // 标记内置作品为已删除
+        const newSet = new Set(deletedPhotoIds.value);
+        newSet.add(id);
+        deletedPhotoIds.value = newSet;
+        localStorage.setItem('photo_deleted_builtin', JSON.stringify([...newSet]));
+      }
+
+      // 同时清除该作品的点赞和收藏
+      const newLiked = new Set(likedIds.value);
+      newLiked.delete(id);
+      likedIds.value = newLiked;
+      localStorage.setItem('photo_liked', JSON.stringify([...newLiked]));
+
+      const newCollected = new Set(collectedIds.value);
+      newCollected.delete(id);
+      collectedIds.value = newCollected;
+      localStorage.setItem('photo_collected', JSON.stringify([...newCollected]));
+
+      showToast('已删除');
+      closeViewer();
     }
 
     // ============ 上传 ============
@@ -222,6 +297,7 @@ createApp({
       isCollected,
       toggleLike,
       toggleCollect,
+      deletePhoto,
       goUpload,
       closeUpload,
       onImageSelect,
