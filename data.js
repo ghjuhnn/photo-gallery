@@ -21,9 +21,9 @@ window.PHOTO_DATA = {
       author: '林深',
       category: 'portrait',
       location: '798艺术区，北京',
-      desc: '自然光下的少女写真，侧脸的轮廓被夕阳勾出金边，无需多余修饰。',
+      desc: '自然光下的少女写真，侧脸的轮廓被夕阳勾出金边，无需多余修饰。这组作品记录了黄昏最温柔的半小时。',
       likes: 328,
-      seed: 'portrait-soft-01'
+      seeds: ['portrait-soft-01', 'portrait-soft-02', 'portrait-soft-03', 'portrait-soft-04']
     },
     {
       id: 2,
@@ -33,7 +33,7 @@ window.PHOTO_DATA = {
       location: '外滩，上海',
       desc: '海风吹起头纱的瞬间，是她最美的样子。定格这一刻的悸动。',
       likes: 489,
-      seed: 'wedding-veil-01'
+      seeds: ['wedding-veil-01', 'wedding-veil-02', 'wedding-veil-03', 'wedding-veil-04', 'wedding-veil-05']
     },
     {
       id: 3,
@@ -43,7 +43,7 @@ window.PHOTO_DATA = {
       location: '中山公园',
       desc: '妈妈低头亲吻女儿的额头，阳光穿过树叶洒在她们身上，温柔得像一幅画。',
       likes: 415,
-      seed: 'family-kiss-01'
+      seeds: ['family-kiss-01', 'family-kiss-02', 'family-kiss-03']
     },
     {
       id: 4,
@@ -63,7 +63,7 @@ window.PHOTO_DATA = {
       location: '教堂，青岛',
       desc: '他说"我愿意"时，她的眼泪终于落下来。这是整场婚礼最珍贵的一秒。',
       likes: 532,
-      seed: 'wedding-vow-01'
+      seeds: ['wedding-vow-01', 'wedding-vow-02', 'wedding-vow-03', 'wedding-vow-04', 'wedding-vow-05', 'wedding-vow-06']
     },
     {
       id: 6,
@@ -73,7 +73,7 @@ window.PHOTO_DATA = {
       location: '婚纱工作室',
       desc: '化妆师为她点上最后一抹唇色的瞬间，她看着镜子里的自己，愣住了。',
       likes: 376,
-      seed: 'fitting-makeup-01'
+      seeds: ['fitting-makeup-01', 'fitting-makeup-02', 'fitting-makeup-03']
     },
     {
       id: 7,
@@ -90,10 +90,10 @@ window.PHOTO_DATA = {
       title: '湖畔誓言',
       author: '陈一',
       category: 'wedding',
-      location: '西湖，杭州',
+      location: '西湖，��州',
       desc: '湖面倒映着白纱与远山，新人的剪影定格成一幅水墨画。',
       likes: 503,
-      seed: 'wedding-lake-01'
+      seeds: ['wedding-lake-01', 'wedding-lake-02', 'wedding-lake-03', 'wedding-lake-04']
     },
     {
       id: 9,
@@ -113,7 +113,7 @@ window.PHOTO_DATA = {
       location: '社区花园',
       desc: '一束彩色气球换来的纯真笑容，是童年最真实的模样。',
       likes: 298,
-      seed: 'kids-balloon-01'
+      seeds: ['kids-balloon-01', 'kids-balloon-02', 'kids-balloon-03']
     },
     {
       id: 11,
@@ -123,7 +123,7 @@ window.PHOTO_DATA = {
       location: '户外草坪',
       desc: '新人走出仪式时，花瓣如雨般落下。所有人都在欢呼，而他们只看着彼此。',
       likes: 487,
-      seed: 'ceremony-petals-01'
+      seeds: ['ceremony-petals-01', 'ceremony-petals-02', 'ceremony-petals-03', 'ceremony-petals-04']
     },
     {
       id: 12,
@@ -153,7 +153,7 @@ window.PHOTO_DATA = {
       location: '平遥古城，山西',
       desc: '红墙青瓦间的白纱，中式与西式的碰撞，别有一番韵味。',
       likes: 421,
-      seed: 'wedding-ancient-01'
+      seeds: ['wedding-ancient-01', 'wedding-ancient-02', 'wedding-ancient-03', 'wedding-ancient-04', 'wedding-ancient-05']
     },
     {
       id: 15,
@@ -163,7 +163,7 @@ window.PHOTO_DATA = {
       location: '老家院子',
       desc: '奶奶、妈妈和女儿，三代人的手叠在一起。时光在这一刻变得温柔。',
       likes: 567,
-      seed: 'family-three-gen-01'
+      seeds: ['family-three-gen-01', 'family-three-gen-02', 'family-three-gen-03']
     },
     {
       id: 16,
@@ -183,7 +183,7 @@ window.PHOTO_DATA = {
       location: '宴会厅',
       desc: '灯光暗下，追光打在旋转的两人身上。这是属于他们的第一支舞。',
       likes: 402,
-      seed: 'ceremony-dance-01'
+      seeds: ['ceremony-dance-01', 'ceremony-dance-02', 'ceremony-dance-03', 'ceremony-dance-04']
     },
     {
       id: 18,
@@ -193,7 +193,7 @@ window.PHOTO_DATA = {
       location: '化妆间',
       desc: '最后一笔定妆，她深吸一口气。镜子里那个闪闪发光的人，就是今天的新娘。',
       likes: 349,
-      seed: 'fitting-bride-01'
+      seeds: ['fitting-bride-01', 'fitting-bride-02', 'fitting-bride-03']
     }
   ]
 };
