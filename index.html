@@ -321,6 +321,31 @@
       max-height: 100%;
       object-fit: contain;
     }
+    /* 多图内部横向滑动 */
+    .viewer-img-swiper {
+      width: 100%;
+      height: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      display: flex;
+      scrollbar-width: none;
+    }
+    .viewer-img-swiper::-webkit-scrollbar { display: none; }
+    .viewer-img-slide {
+      flex-shrink: 0;
+      width: 100%;
+      height: 100%;
+      scroll-snap-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .viewer-img-slide img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
     .viewer-info {
       position: absolute;
       bottom: 0; left: 0; right: 0;
@@ -473,6 +498,50 @@
       font-size: 12px;
       padding: 4px 10px;
       border-radius: 12px;
+    }
+
+    /* 多图上传缩略图网格 */
+    .upload-thumbs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .upload-thumb {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--bg-elevated);
+    }
+    .upload-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .thumb-remove {
+      position: absolute;
+      top: 4px; right: 4px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .thumb-remove:active { transform: scale(0.85); }
+    .upload-thumb-add {
+      aspect-ratio: 1 / 1;
+      border-radius: var(--radius-sm);
+      border: 1.5px dashed var(--accent);
+      background: var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 28px;
     }
 
     .upload-input {
@@ -660,11 +729,27 @@
             class="photo-card"
             @click="openViewer(photo.id)"
           >
-            <img :src="getThumbUrl(photo)" :alt="photo.title" loading="lazy" referrerpolicy="no-referrer">
+            <div class="photo-grid" :class="'grid-' + Math.min(getPhotoCount(photo), 4)">
+              <img
+                v-for="(url, imgIdx) in getThumbUrls(photo).slice(0, 4)"
+                :key="imgIdx"
+                :src="url"
+                :alt="photo.title"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+                :class="{ 'img-placeholder': true }"
+                @load="$event.target.classList.remove('img-placeholder')"
+              >
+              <div class="more-badge" v-if="getPhotoCount(photo) > 4">
+                +{{ getPhotoCount(photo) - 4 }}
+              </div>
+            </div>
             <div class="photo-card-overlay">
               <div class="photo-card-title">{{ photo.title }}</div>
               <div class="photo-card-meta">
                 <span>{{ photo.categoryName }}</span>
+                <span class="dot">·</span>
+                <span>{{ getPhotoCount(photo) }} 张</span>
               </div>
             </div>
             <div class="delete-badge" @click.stop="deletePhoto(photo.id)">🗑️</div>
@@ -684,7 +769,10 @@
         <div class="viewer-header">
           <div class="viewer-header-bar">
             <button class="viewer-close" @click="closeViewer">✕</button>
-            <div class="viewer-counter">{{ viewerIndex + 1 }} / {{ viewerPhotos.length }}</div>
+            <div class="viewer-counter">
+              <div>{{ viewerIndex + 1 }} / {{ viewerPhotos.length }}</div>
+              <div class="sub-count" v-if="currentPhotoImgs.length > 1">{{ currentPhotoImgIdx + 1 }} / {{ currentPhotoImgs.length }} 张</div>
+            </div>
             <div style="width:36px;"></div>
           </div>
         </div>
@@ -698,7 +786,18 @@
             :key="photo.id"
             class="viewer-slide"
           >
-            <img :src="getFullUrl(photo)" :alt="photo.title" referrerpolicy="no-referrer">
+            <!-- 单图直接显示 -->
+            <img v-if="getPhotoCount(photo) <= 1" :src="getFullUrl(photo)" :alt="photo.title" referrerpolicy="no-referrer">
+            <!-- 多图：内部横向滑动 -->
+            <div v-else class="viewer-img-swiper" :ref="el => setMultiImgScroll(el, idx)" @scroll="onMultiImgScroll($event, idx)">
+              <div
+                v-for="(url, imgIdx) in getFullUrls(photo)"
+                :key="imgIdx"
+                class="viewer-img-slide"
+              >
+                <img :src="url" :alt="photo.title + ' - ' + (imgIdx+1)" referrerpolicy="no-referrer">
+              </div>
+            </div>
             <div class="viewer-info" v-if="idx === viewerIndex">
               <div class="viewer-info-title">{{ photo.title }}</div>
               <div class="viewer-info-meta">
@@ -752,17 +851,34 @@
         </div>
         <div class="upload-body">
           <div class="upload-section">
-            <div class="upload-label">作品图片</div>
-            <label class="upload-picker" :class="{ 'has-image': uploadForm.image }">
-              <img v-if="uploadForm.image" :src="uploadForm.image" alt="预览">
-              <template v-else>
-                <div class="picker-icon">📷</div>
-                <div class="picker-text">点击选择图片</div>
-              </template>
-              <div v-if="uploadForm.image" class="change-badge">点击更换</div>
+            <div class="upload-label">作品图片（可多选，最多 9 张）</div>
+            <div class="upload-thumbs" v-if="uploadForm.images.length">
+              <div
+                v-for="(img, imgIdx) in uploadForm.images"
+                :key="imgIdx"
+                class="upload-thumb"
+              >
+                <img :src="img" alt="预览">
+                <button class="thumb-remove" @click.prevent="removeUploadImage(imgIdx)">✕</button>
+              </div>
+              <label class="upload-thumb-add" v-if="uploadForm.images.length < 9">
+                <span>＋</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  style="display:none;"
+                  @change="onImageSelect"
+                >
+              </label>
+            </div>
+            <label class="upload-picker" v-if="!uploadForm.images.length">
+              <div class="picker-icon">📷</div>
+              <div class="picker-text">点击选择图片（可多选）</div>
               <input
                 type="file"
                 accept="image/*"
+                multiple
                 style="display:none;"
                 @change="onImageSelect"
               >
